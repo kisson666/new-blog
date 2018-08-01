@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:mvc="http://www.springframework.org/schema/mvc" xmlns:tx="http://www.springframework.org/schema/tx"
+       xmlns:jpa="http://www.springframework.org/schema/data/jpa"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd http://www.springframework.org/schema/mvc http://www.springframework.org/schema/mvc/spring-mvc.xsd http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx.xsd http://www.springframework.org/schema/data/jpa http://www.springframework.org/schema/data/jpa/spring-jpa.xsd">
+    <!-- ViewResolver -->
+    <bean class="org.springframework.web.servlet.view.InternalResourceViewResolver">
+        <property name="prefix" value="/view/"/>
+        <property name="suffix" value=".jsp"/>
+    </bean>
+
+    <mvc:annotation-driven>
+        <mvc:message-converters>    <!--这里防止用了responsebody注解的返回字符串有种的时候会乱码-->
+            <bean class="org.springframework.http.converter.StringHttpMessageConverter">
+                <property name="supportedMediaTypes" value="text/html;charset=utf-8"></property>
+            </bean>
+        </mvc:message-converters>
+    </mvc:annotation-driven>
+    <context:component-scan base-package="com.wang"/>
+
+
+    <!--如果springmvc和spring的IOC容器扫描的包有相同的部分，有的bean会被创建两次-->
+    <!--springmvc的ioc可以引用spring的ioc中的bean，反之不可以-->
+
+
+    <!--以下是springdatajpa的东西-->
+    <!--配置数据源-->
+    <context:property-placeholder location="classpath:db.properties"/>  <!--我认为db文件在src下就行，但是事实证明要放到resource里面-->
+    <bean id="dataSource" class="com.mchange.v2.c3p0.ComboPooledDataSource">
+        <property name="user" value="${jdbc.user}"></property>
+        <property name="password" value="${jdbc.password}"></property>
+        <property name="driverClass" value="${jdbc.driverClass}"></property>
+        <property name="jdbcUrl" value="${jdbc.jdbcUrl}"></property>
+        <!--还能配置其他属性，这里我也不知道能配什么--> <!--写好一点就单元测试一下，以免以后太多错误找不到在哪-->
+
+        <property name="initialPoolSize" value="2"/>
+        <!-- 连接池中保留的最小连接数，默认为：3-->
+        <property name="minPoolSize" value="2"/>
+        <!--连接池中保留的最大连接数。默认值: 15 -->
+        <property name="maxPoolSize" value="15"/>
+        <!--当连接池中的连接耗尽的时候c3p0一次同时获取的连接数。默认值: 3 -->
+        <property name="acquireIncrement" value="2"/>
+        <!--定义在从数据库获取新连接失败后重复尝试的次数。默认值: 30 ；小于等于0表示无限次-->
+        <property name="acquireRetryAttempts" value="0"/>
+        <!--重新尝试的时间间隔，默认为：1000毫秒-->
+        <property name="acquireRetryDelay" value="1000"/>
+        <!--最大空闲时间，3600秒内未使用则连接被丢弃。若为0则永不丢弃。默认值: 0 -->
+        <property name="maxIdleTime" value="3600"/>
+        <!--c3p0全局的PreparedStatements缓存的大小。如果maxStatements与maxStatementsPerConnection均为0，则缓存不生效，只要有一个不为0，则语句的缓存就能生效。如果默认值: 0-->
+        <property name="maxStatements" value="0"/>
+        <!--maxStatementsPerConnection定义了连接池内单个连接所拥有的最大缓存statements数。默认值: 0 -->
+        <property name="maxStatementsPerConnection" value="0"/>
+        <!--定义所有连接测试都执行的测试语句。在使用连接测试的情况下这个一显著提高测试速度。测试的表必须在初始数据源的时候就存在。Default: null-->
+        <property name="preferredTestQuery" value="select 1"/>
+        <!--每1800秒检查所有连接池中的空闲连接。Default: 0 -->
+        <property name="idleConnectionTestPeriod" value="1800"/>
+        <!-- 获取连接时测试有效性，每次都验证连接是否可用 -->
+        <property name="testConnectionOnCheckout" value="false"/>
+    </bean>
+    <!--配置JPA的EMF-->
+    <bean id="entityManagerFactory" class="org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean">
+        <property name="dataSource" ref="dataSource"></property>
+        <property name="jpaVendorAdapter">
+            <bean class="org.springframework.orm.jpa.vendor.HibernateJpaVendorAdapter"></bean>
+        </property>
+        <property name="packagesToScan" value="com.wang.model"></property>
+        <property name="jpaProperties">
+            <props>
+                <!--生成数据表的列的映射策略-->
+                <prop key="hibernate.ejb.naming_strategy">org.hibernate.cfg.ImprovedNamingStrategy</prop>
+                <!--hibernate的基本属性-->
+                <prop key="hibernate.dialect">org.hibernate.dialect.MySQL5InnoDBDialect</prop>
+                <prop key="hibernate.show_sql">true</prop><!--控制台打印sql语句-->
+                <prop key="hibernate.format_sql">true</prop><!--格式化打印的sql语句-->
+                <prop key="hibernate.hbm2ddl.auto">update</prop>  <!--update:根据映射文件去和数据库中的表对应起来，如果不一致，就更新表的结构-->
+            </props>
+        </property>
+    </bean>
+    <!-- <bean id="entityManagerFactory"
+                  class="org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean">
+     <property name="dataSource" ref="dataSource"/>-->
+    <!-- 扫描实体类 -->
+    <!-- <property name="packagesToScan" value="com.wang.model"/>-->
+    <!-- 指定JPA持久化提供商 -->
+    <!--<property name="persistenceProvider">
+        <bean class="org.hibernate.ejb.HibernatePersistence"/>
+    </property>-->
+    <!--<property name="jpaDialect">--><!--指定一些高级特性-->            <!--狼哥给我的代码中的配置文件中关于jpa的配置就是这样的-->
+    <!--<bean class="org.springframework.orm.jpa.vendor.HibernateJpaDialect"/>-->  <!--这里的HibernateJpaDialect是过时了的，不推荐使用-->
+    <!-- </property>-->
+    <!-- <property name="jpaVendorAdapter">-->
+    <!--<bean class="org.springframework.orm.jpa.vendor.HibernateJpaVendorAdapter">-->
+    <!-- 自动生成DDL   就是没有数据表的时候自动生成数据表 -->
+    <!-- <property name="generateDdl" value="false"/>-->
+    <!-- 表示将打印所有生成的SQL。 -->
+    <!--    <property name="showSql" value="true"/>-->
+    <!--格式化sql语句不知道怎么配-->
+
+    <!-- </bean>
+ </property>
+</bean>-->
+
+    <!--配置事务管理器-->
+    <bean id="transactionManager"
+          class="org.springframework.orm.jpa.JpaTransactionManager">
+        <property name="entityManagerFactory" ref="entityManagerFactory"></property>
+    </bean>
+
+
+    <!--配置支持注解的事务-->
+    <tx:annotation-driven transaction-manager="transactionManager"/>
+
+
+    <!--配置springdata-->
+    <!--加入jpa的命名空间-->
+    <!--base-package:扫描repository bean所在的package-->
+    <jpa:repositories base-package="com.wang.repository"
+                      entity-manager-factory-ref="entityManagerFactory"></jpa:repositories>
+</beans>

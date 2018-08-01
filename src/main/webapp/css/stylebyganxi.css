@@ -1,0 +1,22 @@
+body {
+    margin: 0;
+    height: 100%;
+    width: 100%;
+    font-family: "Arial", "Microsoft YaHei", "����", "����", sans-serif;
+    color: gray;
+}
+
+.background {
+/ / background: black;
+    position: fixed;
+    z-index: -1;
+    left: 0;
+    top: 0;
+    height: 100%;
+    width: 100%;
+}
+
+.copyright {
+    color: #ffffff;
+    text-align: center;
+}
